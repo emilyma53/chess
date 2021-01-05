@@ -64,8 +64,37 @@ class Pawn(Piece):
                 if start_row - 1 == end_row and (start_col - 1 == end_col or start_col + 1 == end_col):
                     return True
         return False
+    
+    def move(self, start_coord, end_coord):
+        """
+        Executes the move if valid and updates the board.
+        Returns a boolean whether the move was successfully executed.
+        """
+        if not self.valid_move(start_coord, end_coord):
+            return False
+        if (end_coord.row == 0 and self.player == 'w') or (end_coord.row == 7 and self.player == 'b'):
+            while True:
+                raw_input = input("What piece should the pawn become? Please enter 'queen', 'rook', 'knight', or 'bishop'.\n")
+                is_valid_format = ["queen", "rook", "knight", "bishop"]
+                if raw_input not in is_valid_format:
+                    print("Invalid format for move. Please enter 'queen', 'rook', 'knight', or 'bishop'.\n")
+                    self.render()
+                    continue
+                if raw_input == "queen":
+                    self.board[end_coord.row][end_coord.col] = Queen(self.player, self.board)
+                elif raw_input == "rook":
+                    self.board[end_coord.row][end_coord.col] = Rook(self.player, self.board)
+                    self.moved = True
+                elif raw_input == "knight":
+                    self.board[end_coord.row][end_coord.col] = Knight(self.player, self.board)
+                elif raw_input == "bishop":
+                    self.board[end_coord.row][end_coord.col] = Bishop(self.player, self.board)
+                self.board[start_coord.row][start_coord.col] = Piece()
+                return True
+        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
+        self.board[start_coord.row][start_coord.col] = Piece()
+        return True
             
-
 
 class Bishop(Piece):
 
@@ -122,6 +151,7 @@ class Rook(Piece):
 
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='R', board=board)
+        self.moved = False
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -129,8 +159,10 @@ class Rook(Piece):
         end_row = end_coord.row
         end_col = end_coord.col
         end_piece = self.board[end_row][end_col]
-        row_diff = start_row - end_row
-        col_diff = start_col - end_col
+        # row_diff = start_row - end_row
+        # col_diff = start_col - end_col
+        row_diff = end_row - start_row
+        col_diff = end_col - start_col
 
         if row_diff != 0 and col_diff != 0:
             return False
@@ -138,7 +170,7 @@ class Rook(Piece):
             if col_diff > 0:
                 check_range = range(1, col_diff)
             elif col_diff < 0:
-                check_range = range(col_diff + 2, 0)
+                check_range = range(col_diff + 1, 0)
             for i in check_range:
                 if self.board[end_row][start_col+i].player != '':
                     return False
@@ -147,11 +179,24 @@ class Rook(Piece):
             if row_diff > 0:
                 check_range = range(1, row_diff)
             elif row_diff < 0:
-                check_range = range(row_diff + 2, 0)
+                check_range = range(row_diff + 1, 0)
             for i in check_range:
+                print(i)
                 if self.board[start_row+i][end_col].player != '':
                     return False
             return True 
+
+    def move(self, start_coord, end_coord):
+        """
+        Executes the move if valid and updates the board.
+        Returns a boolean whether the move was successfully executed.
+        """
+        if not self.valid_move(start_coord, end_coord):
+            return False
+        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
+        self.board[start_coord.row][start_coord.col] = Piece()
+        self.moved = True
+        return True
 
 class Queen(Piece):
 
@@ -167,6 +212,7 @@ class King(Piece):
 
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='K', board=board)
+        self.moved = False
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -182,3 +228,15 @@ class King(Piece):
         elif row_diff == 0 and col_diff == 1:
             return True
         return False
+    
+    def move(self, start_coord, end_coord):
+        """
+        Executes the move if valid and updates the board.
+        Returns a boolean whether the move was successfully executed.
+        """
+        if not self.valid_move(start_coord, end_coord):
+            return False
+        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
+        self.board[start_coord.row][start_coord.col] = Piece()
+        self.moved = True
+        return True
