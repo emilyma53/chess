@@ -49,7 +49,8 @@ class Pawn(Piece):
                 if start_row + 1 == end_row and start_col == end_col:
                     return True
                 elif start_row + 2 == end_row and start_col == end_col and start_row == 1:
-                    return True
+                    if self.board[start_row+1][start_col].player == '':
+                        return True
             elif end_piece.player == 'w':
                 if start_row + 1 == end_row and (start_col - 1 == end_col or start_col + 1 == end_col):
                     return True
@@ -59,7 +60,8 @@ class Pawn(Piece):
                 if start_row - 1 == end_row and start_col == end_col:
                     return True
                 elif start_row - 2 == end_row and start_col == end_col and start_row == 6:
-                    return True
+                    if self.board[start_row-1][start_col].player == '':
+                        return True
             elif end_piece.player == 'b':
                 if start_row - 1 == end_row and (start_col - 1 == end_col or start_col + 1 == end_col):
                     return True
