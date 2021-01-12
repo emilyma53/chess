@@ -34,6 +34,9 @@ class Piece():
         start_square = Piece()
         return True
     
+    def castling(self, start_coord, end_coord):
+        return False
+    
 class Pawn(Piece):
 
     def __init__(self, player, board):
@@ -262,3 +265,24 @@ class King(Piece):
         self.board[start_coord.row][start_coord.col] = Piece()
         self.moved = True
         return True
+
+    def castling(self, start_coord, end_coord):
+        """
+        Returns True or False if castling is valid. 
+        Start_coord must be player's king and end_coord must be a rook.
+        Both rook and king must have never been moved before.
+        The king, rook, or any square in between cannot be currently attacked.
+        """
+        if self.board[end_coord.row][end_coord.col].name != 'R':
+            return False
+        if self.board[end_coord.row][end_coord.col].moved or self.moved:
+            return False
+        col_diff = end_coord.col - start_coord.col
+        if col_diff < 0:
+            col_range = range(end_coord.col, start_coord.col + 1)
+        elif col_diff > 0:
+            col_range = range(start_coord.col, end_coord.col + 1)
+        for i in col_range:
+            pass
+        'TODO'
+

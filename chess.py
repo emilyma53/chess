@@ -73,8 +73,7 @@ class Game:
         print('White score:', self.white.get_score())
         print('Black score:', self.black.get_score())
 
-    @staticmethod
-    def get_move():
+    def get_move(self, curr_player):
         """
         Processes the user input until a valid move is made. 
         Only checks if the move is within the boundaries and if the move is not stationary.
@@ -88,9 +87,20 @@ class Game:
             raw_input = input("Enter player's move. Ex: 'd2 d4' to move a piece from d2 to d4.\n")
             cs = ''.join(raw_input.split()).lower()
             is_valid_format = (len(cs) == 4 and cs[0].isalpha() and cs[1].isdigit() 
-                and cs[2].isalpha() and cs[3].isdigit())
-            print("cs", cs[0], cs[1], cs[2], cs[3])
-            if not is_valid_format:
+                and cs[2].isalpha() and cs[3].isdigit()) 
+            # print("cs", cs[0], cs[1], cs[2], cs[3])
+
+            if cs[0] == '0-0': # Castling
+                if curr_player == self.white:
+                    return (Coordinate(7,4), Coordinate(7,7), True)
+                else:
+                    return (Coordinate(0,4), Coordinate(0,7), True)
+            elif cs[0] == '0-0-0':
+                if curr_player == self.white:
+                    return (Coordinate(7,4), Coordinate(7,0), True)
+                else:
+                    return (Coordinate(0,4), Coordinate(0,0), True)
+            elif not is_valid_format:
                 print("Invalid format for move. Please enter a move in format 'd2 d4'.\n")
                 continue
             elif cs[0] not in column_range or cs[2] not in column_range:
@@ -106,7 +116,7 @@ class Game:
             start_col = ord(cs[0]) - ord('a')
             end_row = 8 - int(cs[3])
             end_col = ord(cs[2]) - ord('a')
-            return (Coordinate(start_row, start_col), Coordinate(end_row, end_col))
+            return (Coordinate(start_row, start_col), Coordinate(end_row, end_col), False)
 
     def check(self, curr_player):
         '''
@@ -114,27 +124,44 @@ class Game:
         (if the chosen move is executed)
         Occurs after calling valid_move
         '''
-
-        return True
+        if curr_player == self.white:
+            opp_player = self.black
+        else:
+            opp_player = self.white
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j].player == curr_player and self.board[i][j].name == 'K':
+                    king_coord = Coordinate(i,j)
+        for i in range(8):
+            for j in range(8):
+               if self.board[i][j].player == opp_player:
+                    if self.board[i][j].valid_move(Coordinate(i,j), king_coord):
+                        return True        
+        return False
 
     def play(self):
         self.render()
         print("Begin game of chess. White moves first.")
         curr_player = self.white
         while True:
-            start_coord, end_coord = Game.get_move()
+            start_coord, end_coord, castling = Game.get_move()
             start_piece = self.board[start_coord.row][start_coord.col]
             end_piece = self.board[end_coord.row][end_coord.col]
             print("start coord", start_coord.row, start_coord.col)
             print("end coord", end_coord.row, end_coord.col)
-            if start_piece.player != curr_player:
-                self.render()
-                print("Wrong player's turn. Please pick a different move.")
-                continue
             if start_piece.player == '':
                 self.render()
                 print("No piece exists in the starting position. Please pick a different move.")
                 continue
+            if start_piece.player != curr_player:
+                self.render()
+                print("Wrong player's turn. Please pick a different move.")
+                continue
+            if castling:
+                if not start_piece.castling(start_coord, end_coord):
+                    self.render()
+                    print("Castling invalid. Please pick a different move.")
+                    continue
             if start_piece.player == end_piece.player:
                 self.render()
                 print("Player cannot take their own piece. Please pick a different move.")
@@ -145,6 +172,10 @@ class Game:
                 print("Move not valid given type of piece moving. Please pick a different move.")
                 continue
             in_check = self.check(curr_player)
+            if in_check:
+                self.render()
+                print("Invalid move as King is in check. Please pick a different move.")
+                continue
             if curr_player == self.white:
                 curr_player = self.black
             else:
