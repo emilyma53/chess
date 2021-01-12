@@ -1,9 +1,19 @@
 from enum import Enum
 import functools
-import numpy as np
 import pieces
+import player
 import sys
 from termcolor import colored, cprint
+
+
+class Coordinate():
+
+    def __init__(self, row, col):
+        self.row = row
+        self.col = col
+    
+    def __repr__(self):
+        return f"({self.row}, {self.col})"
 
 
 class Game:
@@ -12,17 +22,19 @@ class Game:
         """
         Initializes the chessboard as well as the white and black pieces in starting position.
         """
+        self.white = player.Player('w')
+        self.black = player.Player('b')
         self.size = 8
         self.board = []
-        self.board.append([pieces.Rook('b', self.board), pieces.Knight('b', self.board), pieces.Bishop('b', self.board), pieces.Queen('b', self.board), pieces.King('b', self.board), pieces.Bishop('b', self.board), pieces.Knight('b', self.board), pieces.Rook('b', self.board)])
-        self.board.append([pieces.Pawn('b', self.board) for _ in range(self.size)])
+        self.board.append([pieces.Rook(self.black, self.board), pieces.Knight(self.black, self.board), pieces.Bishop(self.black, self.board), pieces.Queen(self.black, self.board), pieces.King(self.black, self.board), pieces.Bishop(self.black, self.board), pieces.Knight(self.black, self.board), pieces.Rook(self.black, self.board)])
+        self.board.append([pieces.Pawn(self.black, self.board) for _ in range(self.size)])
         self.board.append([pieces.Piece() for _ in range(self.size)])
         self.board.append([pieces.Piece() for _ in range(self.size)])
         self.board.append([pieces.Piece() for _ in range(self.size)])
         self.board.append([pieces.Piece() for _ in range(self.size)])
-        self.board.append([pieces.Pawn('w', self.board) for _ in range(self.size)])
-        self.board.append([pieces.Rook('w', self.board), pieces.Knight('w', self.board), pieces.Bishop('w', self.board), pieces.Queen('w', self.board), 
-            pieces.King('w', self.board), pieces.Bishop('w', self.board), pieces.Knight('w', self.board), pieces.Rook('w', self.board)])
+        self.board.append([pieces.Pawn(self.white, self.board) for _ in range(self.size)])
+        self.board.append([pieces.Rook(self.white, self.board), pieces.Knight(self.white, self.board), pieces.Bishop(self.white, self.board), pieces.Queen(self.white, self.board), 
+            pieces.King(self.white, self.board), pieces.Bishop(self.white, self.board), pieces.Knight(self.white, self.board), pieces.Rook(self.white, self.board)])
         
     def render(self):
         """
@@ -39,15 +51,27 @@ class Game:
             else:
                 alternate_board = 'magenta'
             for p in row:
-                if p.player == '':
+                if not p.player:
                     cprint('   ', 'white', 'on_cyan', end='') if alternate_board == 'cyan' else cprint('   ', 'white', 'on_magenta', end='')
-                elif p.player == 'w':
+                elif p.player == self.white:
                     cprint(' ' + p.name + ' ', 'white', 'on_cyan', attrs=['bold'], end='') if alternate_board == 'cyan' else cprint(' ' + p.name + ' ', 'white', 'on_magenta', attrs=['bold'], end='')
-                elif p.player == 'b':
+                elif p.player == self.black:
                     cprint(' ' + p.name + ' ', 'cyan', attrs=['bold', 'reverse'], end='') if alternate_board == 'cyan' else cprint(' ' + p.name + ' ', 'magenta', attrs=['bold', 'reverse'], end='')
                 alternate_board = 'magenta' if alternate_board == 'cyan' else 'cyan'
             print('')
+        print("White player's peices: ", end='')
+        for piece in self.white.curr_pieces:
+            value = self.white.curr_pieces[piece]
+            print(piece.name, end=': ')
+            print(value, end=' ')
+        print("\nBlack player's pieces: ", end='')
+        for piece in self.black.curr_pieces:
+            value = self.black.curr_pieces[piece]
+            print(piece.name, end=': ')
+            print(value, end=' ')
         print('\n')
+        print('White score:', self.white.get_score())
+        print('Black score:', self.black.get_score())
 
     @staticmethod
     def get_move():
@@ -82,12 +106,21 @@ class Game:
             start_col = ord(cs[0]) - ord('a')
             end_row = 8 - int(cs[3])
             end_col = ord(cs[2]) - ord('a')
-            return (pieces.Coordinate(start_row, start_col), pieces.Coordinate(end_row, end_col))
+            return (Coordinate(start_row, start_col), Coordinate(end_row, end_col))
+
+    def check(self, curr_player):
+        '''
+        Returns True or False whether the current player is in check 
+        (if the chosen move is executed)
+        Occurs after calling valid_move
+        '''
+
+        return True
 
     def play(self):
         self.render()
         print("Begin game of chess. White moves first.")
-        curr_player = 'w'
+        curr_player = self.white
         while True:
             start_coord, end_coord = Game.get_move()
             start_piece = self.board[start_coord.row][start_coord.col]
@@ -111,10 +144,11 @@ class Game:
                 self.render()
                 print("Move not valid given type of piece moving. Please pick a different move.")
                 continue
-            if curr_player == 'w':
-                curr_player = 'b'
+            in_check = self.check(curr_player)
+            if curr_player == self.white:
+                curr_player = self.black
             else:
-                curr_player = 'w'
+                curr_player = self.white
             self.render()
 
 

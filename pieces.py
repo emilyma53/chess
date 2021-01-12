@@ -1,19 +1,14 @@
-
-class Coordinate():
-
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
-    
-    def __repr__(self):
-        return f"({self.row}, {self.col})"
+import player
 
 class Piece():
 
-    def __init__(self, player='', name=' ', board=None):
+    def __init__(self, player=None, name=' ', board=None):
         self.player = player
         self.name = name
         self.board = board
+    
+    def possible_moves(self, start_coord, end_coord):
+        return None
 
     def valid_move(self, start_coord, end_coord):
         """
@@ -27,16 +22,23 @@ class Piece():
         Executes the move if valid and updates the board.
         Returns a boolean whether the move was successfully executed.
         """
+        end_piece = self.board[end_coord.row][end_coord.col]
+        start_piece = self.board[start_coord.row][start_coord.col]
         if not self.valid_move(start_coord, end_coord):
             return False
-        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
-        self.board[start_coord.row][start_coord.col] = Piece()
+        if end_piece.player:
+            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
+            del end_piece.player.curr_pieces[end_piece]
+            
+        end_square = self.board[start_coord.row][start_coord.col]
+        start_square = Piece()
         return True
     
 class Pawn(Piece):
 
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='P', board=board)
+        self.player.curr_pieces[self] = 1
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -44,25 +46,25 @@ class Pawn(Piece):
         end_row = end_coord.row
         end_col = end_coord.col
         end_piece = self.board[end_row][end_col]
-        if self.player == 'b':
-            if end_piece.player == '':
+        if self.player.name == 'b':
+            if not end_piece.player:
                 if start_row + 1 == end_row and start_col == end_col:
                     return True
                 elif start_row + 2 == end_row and start_col == end_col and start_row == 1:
-                    if self.board[start_row+1][start_col].player == '':
+                    if not self.board[start_row+1][start_col].player:
                         return True
-            elif end_piece.player == 'w':
+            elif end_piece.player.name == 'w':
                 if start_row + 1 == end_row and (start_col - 1 == end_col or start_col + 1 == end_col):
                     return True
         
-        elif self.player == 'w':
-            if end_piece.player == '':
+        elif self.player.name == 'w':
+            if not end_piece.player:
                 if start_row - 1 == end_row and start_col == end_col:
                     return True
                 elif start_row - 2 == end_row and start_col == end_col and start_row == 6:
-                    if self.board[start_row-1][start_col].player == '':
+                    if not self.board[start_row-1][start_col].player:
                         return True
-            elif end_piece.player == 'b':
+            elif end_piece.player.name == 'b':
                 if start_row - 1 == end_row and (start_col - 1 == end_col or start_col + 1 == end_col):
                     return True
         return False
@@ -74,7 +76,12 @@ class Pawn(Piece):
         """
         if not self.valid_move(start_coord, end_coord):
             return False
-        if (end_coord.row == 0 and self.player == 'w') or (end_coord.row == 7 and self.player == 'b'):
+        end_piece = self.board[end_coord.row][end_coord.col]
+        start_piece = self.board[start_coord.row][start_coord.col]
+        if end_piece.player:
+            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
+            del end_piece.player.curr_pieces[end_piece]
+        if (end_coord.row == 0 and self.player.name == 'w') or (end_coord.row == 7 and self.player.name == 'b'):
             while True:
                 raw_input = input("What piece should the pawn become? Please enter 'queen', 'rook', 'knight', or 'bishop'.\n")
                 is_valid_format = ["queen", "rook", "knight", "bishop"]
@@ -102,6 +109,7 @@ class Bishop(Piece):
 
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='B', board=board)
+        self.player.curr_pieces[self] = 3
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -125,7 +133,7 @@ class Bishop(Piece):
         i += row_dir
         j += col_dir
         while i != end_row and j != end_col:
-            if self.board[i][j].player != '':
+            if self.board[i][j].player:
                 return False
             i += row_dir
             j += col_dir
@@ -135,6 +143,7 @@ class Knight(Piece):
 
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='N', board=board)
+        self.player.curr_pieces[self] = 3
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -154,6 +163,7 @@ class Rook(Piece):
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='R', board=board)
         self.moved = False
+        self.player.curr_pieces[self] = 5
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -161,8 +171,6 @@ class Rook(Piece):
         end_row = end_coord.row
         end_col = end_coord.col
         end_piece = self.board[end_row][end_col]
-        # row_diff = start_row - end_row
-        # col_diff = start_col - end_col
         row_diff = end_row - start_row
         col_diff = end_col - start_col
 
@@ -174,7 +182,7 @@ class Rook(Piece):
             elif col_diff < 0:
                 check_range = range(col_diff + 1, 0)
             for i in check_range:
-                if self.board[end_row][start_col+i].player != '':
+                if self.board[end_row][start_col+i].player:
                     return False
             return True 
         elif row_diff != 0: # Check up or down
@@ -184,7 +192,7 @@ class Rook(Piece):
                 check_range = range(row_diff + 1, 0)
             for i in check_range:
                 print(i)
-                if self.board[start_row+i][end_col].player != '':
+                if self.board[start_row+i][end_col].player:
                     return False
             return True 
 
@@ -195,6 +203,11 @@ class Rook(Piece):
         """
         if not self.valid_move(start_coord, end_coord):
             return False
+        end_piece = self.board[end_coord.row][end_coord.col]
+        start_piece = self.board[start_coord.row][start_coord.col]
+        if end_piece.player:
+            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
+            del end_piece.player.curr_pieces[end_piece]
         self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
         self.board[start_coord.row][start_coord.col] = Piece()
         self.moved = True
@@ -204,6 +217,7 @@ class Queen(Piece):
 
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='Q', board=board)
+        self.player.curr_pieces[self] = 9
 
     def valid_move(self, start_coord, end_coord):
         valid_rook = Rook(player=self.player, board=self.board).valid_move(start_coord, end_coord)
@@ -215,6 +229,7 @@ class King(Piece):
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='K', board=board)
         self.moved = False
+        self.player.curr_pieces[self] = 0
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -238,6 +253,11 @@ class King(Piece):
         """
         if not self.valid_move(start_coord, end_coord):
             return False
+        end_piece = self.board[end_coord.row][end_coord.col]
+        start_piece = self.board[start_coord.row][start_coord.col]
+        if end_piece.player:
+            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
+            del end_piece.player.curr_pieces[end_piece]
         self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
         self.board[start_coord.row][start_coord.col] = Piece()
         self.moved = True
