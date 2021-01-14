@@ -60,18 +60,20 @@ class Game:
                 alternate_board = 'magenta' if alternate_board == 'cyan' else 'cyan'
             print('')
         print("White player's peices: ", end='')
-        for piece in self.white.curr_pieces:
-            value = self.white.curr_pieces[piece]
-            print(piece.name, end=': ')
-            print(value, end=' ')
+        for piece in sorted(self.white.curr_pieces, key=self.white.curr_pieces.get, reverse=False):
+            print(piece.name, end=' ')
         print("\nBlack player's pieces: ", end='')
-        for piece in self.black.curr_pieces:
-            value = self.black.curr_pieces[piece]
-            print(piece.name, end=': ')
-            print(value, end=' ')
+        for piece in sorted(self.black.curr_pieces, key=self.black.curr_pieces.get, reverse=False):
+            print(piece.name, end=' ')
         print('\n')
-        print('White score:', self.white.get_score())
-        print('Black score:', self.black.get_score())
+        white_score = self.white.get_score()
+        black_score = self.black.get_score()
+        if white_score > black_score:
+            print('White is winning by', white_score - black_score, 'points')
+        elif black_score > white_score:
+            print('Black is winning by', black_score - white_score, 'points')
+        else:
+            print('The score between players is currently tied.')
 
     def get_move(self, curr_player):
         """
@@ -90,12 +92,12 @@ class Game:
                 and cs[2].isalpha() and cs[3].isdigit()) 
             # print("cs", cs[0], cs[1], cs[2], cs[3])
 
-            if cs[0] == '0-0': # Castling
+            if cs[0] == '0' and cs[1] == '-' and cs[2] == '0' and len(cs) == 3: # Castling
                 if curr_player == self.white:
                     return (Coordinate(7,4), Coordinate(7,7), True)
                 else:
                     return (Coordinate(0,4), Coordinate(0,7), True)
-            elif cs[0] == '0-0-0':
+            elif cs[0] == '0' and cs[1] == '-' and cs[2] == '0' and cs[3] == '-' and cs[4] == '0' and len(cs) == 5:
                 if curr_player == self.white:
                     return (Coordinate(7,4), Coordinate(7,0), True)
                 else:
@@ -124,18 +126,18 @@ class Game:
         (if the chosen move is executed)
         Occurs after calling valid_move
         '''
-        if curr_player == self.white:
-            opp_player = self.black
+        if curr_player.name == 'w':
+            opp_player_name = 'b'
         else:
-            opp_player = self.white
+            opp_player_name = 'w'
         for i in range(8):
             for j in range(8):
-                if self.board[i][j].player == curr_player and self.board[i][j].name == 'K':
-                    king_coord = Coordinate(i,j)
+                if self.board[i][j].player.name == curr_player.name and self.board[i][j].name == 'K':
+                    king_coord = game.Coordinate(i,j)
         for i in range(8):
             for j in range(8):
-               if self.board[i][j].player == opp_player:
-                    if self.board[i][j].valid_move(Coordinate(i,j), king_coord):
+               if self.board[i][j].player.name == opp_player_name:
+                    if self.board[i][j].valid_move(game.Coordinate(i,j), king_coord):
                         return True        
         return False
 
@@ -144,7 +146,7 @@ class Game:
         print("Begin game of chess. White moves first.")
         curr_player = self.white
         while True:
-            start_coord, end_coord, castling = Game.get_move()
+            start_coord, end_coord, castling = self.get_move(curr_player)
             start_piece = self.board[start_coord.row][start_coord.col]
             end_piece = self.board[end_coord.row][end_coord.col]
             print("start coord", start_coord.row, start_coord.col)
@@ -169,13 +171,13 @@ class Game:
             valid_piece_move = self.board[start_coord.row][start_coord.col].move(start_coord, end_coord)
             if not valid_piece_move:
                 self.render()
-                print("Move not valid given type of piece moving. Please pick a different move.")
+                print("Move not valid given type of piece moving or king is in check. Please pick a different move.")
                 continue
-            in_check = self.check(curr_player)
-            if in_check:
-                self.render()
-                print("Invalid move as King is in check. Please pick a different move.")
-                continue
+            # in_check = self.check(curr_player)
+            # if in_check:
+            #     self.render()
+            #     print("Invalid move as King is in check. Please pick a different move.")
+            #     continue
             if curr_player == self.white:
                 curr_player = self.black
             else:

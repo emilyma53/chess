@@ -1,4 +1,5 @@
 import player
+import game
 
 class Piece():
 
@@ -26,15 +27,48 @@ class Piece():
         start_piece = self.board[start_coord.row][start_coord.col]
         if not self.valid_move(start_coord, end_coord):
             return False
+        board_copy = self.board.copy()
+        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
+        self.board[start_coord.row][start_coord.col] = Piece()
+        if self.check(self.player):
+            self.board = board_copy
+            return False
         if end_piece.player:
             start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
             del end_piece.player.curr_pieces[end_piece]
-            
-        end_square = self.board[start_coord.row][start_coord.col]
-        start_square = Piece()
         return True
     
     def castling(self, start_coord, end_coord):
+        return False
+
+    
+    def check(self, curr_player):
+        '''
+        Returns True or False whether the current player is in check 
+        (if the chosen move is executed)
+        Occurs after calling valid_move
+        '''
+        if not curr_player:
+            print("CURR PLAYER IS NONE")
+        if curr_player.name == 'w':
+            opp_player_name = 'b'
+        else:
+            opp_player_name = 'w'
+        for i in range(8):
+            for j in range(8):
+                if not self.board[i][j].player:
+                    continue
+                if self.board[i][j].player.name == curr_player.name and self.board[i][j].name == 'K':
+                    king_coord = game.Coordinate(i,j)
+        for i in range(8):
+            for j in range(8):
+                if not self.board[i][j].player:
+                    continue
+                if self.board[i][j].player.name == opp_player_name:
+                    if self.board[i][j].valid_move(game.Coordinate(i,j), king_coord):
+                        print(self.board[i][j].name, self.board[i][j].player.name, i, j)
+                        print(king_coord.row, king_coord.col)
+                        return True        
         return False
     
 class Pawn(Piece):
@@ -81,10 +115,14 @@ class Pawn(Piece):
             return False
         end_piece = self.board[end_coord.row][end_coord.col]
         start_piece = self.board[start_coord.row][start_coord.col]
-        if end_piece.player:
-            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
-            del end_piece.player.curr_pieces[end_piece]
+        board_copy = self.board.copy()
+        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
+        self.board[start_coord.row][start_coord.col] = Piece()
+        if self.check(self.player):
+            self.board = board_copy
+            return False
         if (end_coord.row == 0 and self.player.name == 'w') or (end_coord.row == 7 and self.player.name == 'b'):
+            self.board = board_copy
             while True:
                 raw_input = input("What piece should the pawn become? Please enter 'queen', 'rook', 'knight', or 'bishop'.\n")
                 is_valid_format = ["queen", "rook", "knight", "bishop"]
@@ -101,10 +139,15 @@ class Pawn(Piece):
                     self.board[end_coord.row][end_coord.col] = Knight(self.player, self.board)
                 elif raw_input == "bishop":
                     self.board[end_coord.row][end_coord.col] = Bishop(self.player, self.board)
+                if end_piece.player:
+                    start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
+                    del end_piece.player.curr_pieces[end_piece]
+                del start_piece.player.curr_pieces[start_piece]
                 self.board[start_coord.row][start_coord.col] = Piece()
                 return True
-        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
-        self.board[start_coord.row][start_coord.col] = Piece()
+        if end_piece.player:
+            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
+            del end_piece.player.curr_pieces[end_piece]
         return True
             
 
@@ -125,6 +168,8 @@ class Bishop(Piece):
         j = start_col
         if end_col == start_col or end_row == start_row:
             return False
+        if abs(end_col - start_col) != abs(end_row - start_row):
+            return False
         if end_row < start_row:
             row_dir = -1 
         elif end_row > start_row:
@@ -136,7 +181,7 @@ class Bishop(Piece):
         i += row_dir
         j += col_dir
         while i != end_row and j != end_col:
-            if self.board[i][j].player:
+            if self.board[i][j].player or i < 0 or j < 0:
                 return False
             i += row_dir
             j += col_dir
@@ -223,8 +268,12 @@ class Queen(Piece):
         self.player.curr_pieces[self] = 9
 
     def valid_move(self, start_coord, end_coord):
-        valid_rook = Rook(player=self.player, board=self.board).valid_move(start_coord, end_coord)
-        valid_bishop = Bishop(player=self.player, board=self.board).valid_move(start_coord, end_coord)
+        rook = Rook(player=self.player, board=self.board)
+        bishop = Bishop(player=self.player, board=self.board)
+        valid_rook = rook.valid_move(start_coord, end_coord)
+        valid_bishop = bishop.valid_move(start_coord, end_coord)
+        del self.player.curr_pieces[rook]
+        del self.player.curr_pieces[bishop]
         return valid_rook or valid_bishop
 
 class King(Piece):
@@ -279,10 +328,13 @@ class King(Piece):
             return False
         col_diff = end_coord.col - start_coord.col
         if col_diff < 0:
-            col_range = range(end_coord.col, start_coord.col + 1)
+            col_range = range(2, 5)
         elif col_diff > 0:
-            col_range = range(start_coord.col, end_coord.col + 1)
+            col_range = range(4, 7)
         for i in col_range:
-            pass
-        'TODO'
+            if self.board[i][end_coord.col].check(self.player):
+                return False
+        return True
+
+        'TODO: Fix castling checking empty spots on the board'
 
