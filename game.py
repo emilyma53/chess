@@ -28,10 +28,10 @@ class Game:
         self.board = []
         self.board.append([pieces.Rook(self.black, self.board), pieces.Knight(self.black, self.board), pieces.Bishop(self.black, self.board), pieces.Queen(self.black, self.board), pieces.King(self.black, self.board), pieces.Bishop(self.black, self.board), pieces.Knight(self.black, self.board), pieces.Rook(self.black, self.board)])
         self.board.append([pieces.Pawn(self.black, self.board) for _ in range(self.size)])
-        self.board.append([pieces.Piece() for _ in range(self.size)])
-        self.board.append([pieces.Piece() for _ in range(self.size)])
-        self.board.append([pieces.Piece() for _ in range(self.size)])
-        self.board.append([pieces.Piece() for _ in range(self.size)])
+        self.board.append([pieces.Piece(board=self.board) for _ in range(self.size)])
+        self.board.append([pieces.Piece(board=self.board) for _ in range(self.size)])
+        self.board.append([pieces.Piece(board=self.board) for _ in range(self.size)])
+        self.board.append([pieces.Piece(board=self.board) for _ in range(self.size)])
         self.board.append([pieces.Pawn(self.white, self.board) for _ in range(self.size)])
         self.board.append([pieces.Rook(self.white, self.board), pieces.Knight(self.white, self.board), pieces.Bishop(self.white, self.board), pieces.Queen(self.white, self.board), 
             pieces.King(self.white, self.board), pieces.Bishop(self.white, self.board), pieces.Knight(self.white, self.board), pieces.Rook(self.white, self.board)])
@@ -90,8 +90,6 @@ class Game:
             cs = ''.join(raw_input.split()).lower()
             is_valid_format = (len(cs) == 4 and cs[0].isalpha() and cs[1].isdigit() 
                 and cs[2].isalpha() and cs[3].isdigit()) 
-            # print("cs", cs[0], cs[1], cs[2], cs[3])
-
             if cs[0] == '0' and cs[1] == '-' and cs[2] == '0' and len(cs) == 3: # Castling
                 if curr_player == self.white:
                     return (Coordinate(7,4), Coordinate(7,7), True)
@@ -163,21 +161,22 @@ class Game:
                 if not start_piece.castling(start_coord, end_coord):
                     self.render()
                     print("Castling invalid. Please pick a different move.")
-                    continue
+                else:
+                    if curr_player == self.white:
+                        curr_player = self.black
+                    else:
+                        curr_player = self.white
+                    self.render()
+                continue
+            valid_piece_move = self.board[start_coord.row][start_coord.col].move(start_coord, end_coord)
             if start_piece.player == end_piece.player:
                 self.render()
                 print("Player cannot take their own piece. Please pick a different move.")
                 continue
-            valid_piece_move = self.board[start_coord.row][start_coord.col].move(start_coord, end_coord)
             if not valid_piece_move:
                 self.render()
                 print("Move not valid given type of piece moving or king is in check. Please pick a different move.")
                 continue
-            # in_check = self.check(curr_player)
-            # if in_check:
-            #     self.render()
-            #     print("Invalid move as King is in check. Please pick a different move.")
-            #     continue
             if curr_player == self.white:
                 curr_player = self.black
             else:

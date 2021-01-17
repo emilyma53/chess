@@ -29,8 +29,8 @@ class Piece():
             return False
         board_copy = self.board.copy()
         self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
-        self.board[start_coord.row][start_coord.col] = Piece()
-        if self.check(self.player):
+        self.board[start_coord.row][start_coord.col] = Piece(board=self.board)
+        if self.check(self.player, self.get_king_coord()):
             self.board = board_copy
             return False
         if end_piece.player:
@@ -41,8 +41,17 @@ class Piece():
     def castling(self, start_coord, end_coord):
         return False
 
+    def get_king_coord(self):
+        curr_player = self.player
+        for i in range(8):
+            for j in range(8):
+                if not self.board[i][j].player:
+                    continue
+                if self.board[i][j].player.name == curr_player.name and self.board[i][j].name == 'K':
+                    return game.Coordinate(i,j)
+
     
-    def check(self, curr_player):
+    def check(self, curr_player, king_coord):
         '''
         Returns True or False whether the current player is in check 
         (if the chosen move is executed)
@@ -54,12 +63,6 @@ class Piece():
             opp_player_name = 'b'
         else:
             opp_player_name = 'w'
-        for i in range(8):
-            for j in range(8):
-                if not self.board[i][j].player:
-                    continue
-                if self.board[i][j].player.name == curr_player.name and self.board[i][j].name == 'K':
-                    king_coord = game.Coordinate(i,j)
         for i in range(8):
             for j in range(8):
                 if not self.board[i][j].player:
@@ -83,6 +86,8 @@ class Pawn(Piece):
         end_row = end_coord.row
         end_col = end_coord.col
         end_piece = self.board[end_row][end_col]
+        if end_piece.player == self.board[start_row][start_col].player:
+            return False
         if self.player.name == 'b':
             if not end_piece.player:
                 if start_row + 1 == end_row and start_col == end_col:
@@ -117,8 +122,8 @@ class Pawn(Piece):
         start_piece = self.board[start_coord.row][start_coord.col]
         board_copy = self.board.copy()
         self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
-        self.board[start_coord.row][start_coord.col] = Piece()
-        if self.check(self.player):
+        self.board[start_coord.row][start_coord.col] = Piece(board=self.board)
+        if self.check(self.player, self.get_king_coord()):
             self.board = board_copy
             return False
         if (end_coord.row == 0 and self.player.name == 'w') or (end_coord.row == 7 and self.player.name == 'b'):
@@ -143,7 +148,7 @@ class Pawn(Piece):
                     start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
                     del end_piece.player.curr_pieces[end_piece]
                 del start_piece.player.curr_pieces[start_piece]
-                self.board[start_coord.row][start_coord.col] = Piece()
+                self.board[start_coord.row][start_coord.col] = Piece(board=self.board)
                 return True
         if end_piece.player:
             start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
@@ -163,6 +168,9 @@ class Bishop(Piece):
         end_row = end_coord.row
         end_col = end_coord.col
         end_piece = self.board[end_row][end_col]
+
+        if end_piece.player == self.board[start_row][start_col].player:
+            return False
 
         i = start_row
         j = start_col
@@ -202,6 +210,9 @@ class Knight(Piece):
         row_diff = abs(start_row - end_row)
         col_diff = abs(start_col - end_col)
 
+        if end_piece.player == self.board[start_row][start_col].player:
+            return False
+
         if (row_diff == 2 and col_diff == 1) or (row_diff == 1 and col_diff == 2):
             return True
         return False
@@ -221,6 +232,9 @@ class Rook(Piece):
         end_piece = self.board[end_row][end_col]
         row_diff = end_row - start_row
         col_diff = end_col - start_col
+
+        if end_piece.player == self.board[start_row][start_col].player:
+            return False
 
         if row_diff != 0 and col_diff != 0:
             return False
@@ -249,15 +263,9 @@ class Rook(Piece):
         Executes the move if valid and updates the board.
         Returns a boolean whether the move was successfully executed.
         """
-        if not self.valid_move(start_coord, end_coord):
+        valid_move = Piece.move(self, start_coord, end_coord)
+        if not valid_move:
             return False
-        end_piece = self.board[end_coord.row][end_coord.col]
-        start_piece = self.board[start_coord.row][start_coord.col]
-        if end_piece.player:
-            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
-            del end_piece.player.curr_pieces[end_piece]
-        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
-        self.board[start_coord.row][start_coord.col] = Piece()
         self.moved = True
         return True
 
@@ -290,6 +298,8 @@ class King(Piece):
         end_col = end_coord.col
         row_diff = abs(start_row - end_row)
         col_diff = abs(start_col - end_col)
+        if self.board[end_row][end_col].player == self.board[start_row][start_col].player:
+            return False
         if row_diff == 1 and col_diff == 1:
             return True
         elif row_diff == 1 and col_diff == 0:
@@ -303,15 +313,9 @@ class King(Piece):
         Executes the move if valid and updates the board.
         Returns a boolean whether the move was successfully executed.
         """
-        if not self.valid_move(start_coord, end_coord):
+        valid_move = Piece.move(self, start_coord, end_coord)
+        if not valid_move:
             return False
-        end_piece = self.board[end_coord.row][end_coord.col]
-        start_piece = self.board[start_coord.row][start_coord.col]
-        if end_piece.player:
-            start_piece.player.captured[end_piece] = end_piece.player.curr_pieces[end_piece]
-            del end_piece.player.curr_pieces[end_piece]
-        self.board[end_coord.row][end_coord.col] = self.board[start_coord.row][start_coord.col]
-        self.board[start_coord.row][start_coord.col] = Piece()
         self.moved = True
         return True
 
@@ -328,13 +332,31 @@ class King(Piece):
             return False
         col_diff = end_coord.col - start_coord.col
         if col_diff < 0:
-            col_range = range(2, 5)
+            col_range1 = range(2, 5)
+            col_range2 = range(1, 4)
         elif col_diff > 0:
-            col_range = range(4, 7)
-        for i in col_range:
-            if self.board[i][end_coord.col].check(self.player):
+            col_range1 = range(4, 7)
+            col_range2 = range(5, 8)
+        for i in col_range1:
+            if self.check(self.player, game.Coordinate(start_coord.row, i)):
                 return False
+        for i in col_range2:
+            if self.board[start_coord.row][i].player:
+                return False
+        self.moved = True
+        if end_coord.col == 7:
+            self.board[start_coord.row][5] = self.board[start_coord.row][7]
+            self.board[start_coord.row][7] = Piece(board=self.board)
+            self.board[start_coord.row][6] = self.board[start_coord.row][4]
+            self.board[start_coord.row][4] = Piece(board=self.board)
+        elif end_coord.col == 0:
+            self.board[start_coord.row][3] = self.board[start_coord.row][0]
+            self.board[start_coord.row][0] = Piece(board=self.board)
+            self.board[start_coord.row][2] = self.board[start_coord.row][4]
+            self.board[start_coord.row][4] = Piece(board=self.board)
+        else:
+            print("ERROR WITH CASTLING CODE")
         return True
+        
 
-        'TODO: Fix castling checking empty spots on the board'
 

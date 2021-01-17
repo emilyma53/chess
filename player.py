@@ -16,7 +16,4 @@ class Player():
         for piece in self.curr_pieces:
             value = self.curr_pieces[piece]
             score += value
-        for piece in self.captured:
-            value = self.captured[piece]
-            score += value
         return score
