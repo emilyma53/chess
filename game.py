@@ -36,6 +36,16 @@ class Game:
         self.board.append([pieces.Rook(self.white, self.board), pieces.Knight(self.white, self.board), pieces.Bishop(self.white, self.board), pieces.Queen(self.white, self.board), 
             pieces.King(self.white, self.board), pieces.Bishop(self.white, self.board), pieces.Knight(self.white, self.board), pieces.Rook(self.white, self.board)])
         
+    def print_score(self):
+        white_score = self.white.get_score()
+        black_score = self.black.get_score()
+        if white_score > black_score:
+            print('White is winning by', white_score - black_score, 'points')
+        elif black_score > white_score:
+            print('Black is winning by', black_score - white_score, 'points')
+        else:
+            print('Both players have the same score. The game is tied')
+
     def render(self):
         """
          Prints the board after each turn.
@@ -66,14 +76,7 @@ class Game:
         for piece in sorted(self.black.curr_pieces, key=self.black.curr_pieces.get, reverse=False):
             print(piece.name, end=' ')
         print('\n')
-        white_score = self.white.get_score()
-        black_score = self.black.get_score()
-        if white_score > black_score:
-            print('White is winning by', white_score - black_score, 'points')
-        elif black_score > white_score:
-            print('Black is winning by', black_score - white_score, 'points')
-        else:
-            print('The score between players is currently tied.')
+        self.print_score()
 
     def get_move(self, curr_player):
         """
