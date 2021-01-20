@@ -17,6 +17,7 @@ class Coordinate():
 
 class Game:
 
+    # board = []
     def __init__(self):
         """
         Initializes the chessboard as well as the white and black pieces in starting position.
@@ -140,6 +141,17 @@ class Game:
                     if self.board[i][j].valid_move(game.Coordinate(i,j), king_coord):
                         return True        
         return False
+    
+    def checkmate(self, opp):
+        '''
+        Returns True/False if the game is over via checkmate. 
+        Returns True if the opposing player is in checkmate and has lost.
+        '''
+        king_coord = opp.curr_pieces.keys()[0].get_king_coord()
+        for i in range(8):
+            for j in range(8):
+                pass
+        return True
 
     def play(self):
         '''
