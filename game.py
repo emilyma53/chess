@@ -1,4 +1,3 @@
-from enum import Enum
 import functools
 import pieces
 import player
@@ -143,6 +142,10 @@ class Game:
         return False
 
     def play(self):
+        '''
+        Executes the game by calling other methods in the Game class.
+        Play ends when white or black wins through checkmate or stalemate.
+        '''
         self.render()
         print("Begin game of chess. White moves first.")
         curr_player = self.white

@@ -1,6 +1,7 @@
 import player
 import game
 
+'TODO: Add Checkmate! Add function that lists all valid moves for the given pieces.'
 class Piece():
 
     def __init__(self, player=None, name=' ', board=None):
@@ -8,8 +9,8 @@ class Piece():
         self.name = name
         self.board = board
     
-    def possible_moves(self, start_coord, end_coord):
-        return None
+    def all_moves(self, start_coord, end_coord):
+        return []
 
     def valid_move(self, start_coord, end_coord):
         """
@@ -79,6 +80,33 @@ class Pawn(Piece):
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='P', board=board)
         self.player.curr_pieces[self] = 1
+
+    def all_moves(self, start_coord):
+        all_moves = []
+        start_row = start_coord.row
+        start_col = start_coord.col
+        if self.player.name == 'b':
+            if not self.board[start_row + 1][start_col].player:
+                all_moves.append(game.Coordinate(start_row + 1, start_col))
+            if not self.board[start_row + 2][start_col].player and start_row == 1:
+                if not self.board[start_row + 1][start_col].player:
+                    all_moves.append(game.Coordinate(start_row + 2, start_col))
+            if self.board[start_row + 1][start_col - 1].player.name == 'w':
+                all_moves.append(game.Coordinate(start_row + 1, start_col - 1))
+            if self.board[start_row + 1][start_col + 1].player.name == 'w':
+                all_moves.append(game.Coordinate(start_row + 1, start_col + 1))
+        elif self.player.name == 'w':
+            if not self.board[start_row - 1][start_col].player:
+                all_moves.append(game.Coordinate(start_row - 1, start_col))
+            if not self.board[start_row - 2][start_col].player and start_row == 6:
+                if not self.board[start_row - 1][start_col].player:
+                    all_moves.append(game.Coordinate(start_row - 2, start_col))
+            if self.board[start_row - 1][start_col - 1].player.name == 'b':
+                all_moves.append(game.Coordinate(start_row - 1, start_col - 1))
+            if self.board[start_row - 1][start_col + 1].player.name == 'b':
+                all_moves.append(game.Coordinate(start_row - 1, start_col + 1))
+        return all_moves
+            
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -162,6 +190,26 @@ class Bishop(Piece):
         Piece.__init__(self, player=player, name='B', board=board)
         self.player.curr_pieces[self] = 3
 
+    def all_moves(self, start_coord):
+        start_row = start_coord.row
+        start_col = start_coord.col
+        all_moves = []
+        directions = [(1,1), (-1,1), (1,-1), (-1, -1)]
+        for row_dir, col_dir in directions:
+            i = start_row + row_dir
+            j = start_col + col_dir
+            while not self.board[i][j].player:
+                if self.board[i][j].player or i < 0 or j < 0 or i > 7 or j > 7:
+                    break
+                all_moves.append(game.Coordinate(i,j))
+                i += row_dir
+                j += col_dir
+            if self.board[i][j].player:
+                if self.board[i][j].player != self.player:
+                    all_moves.append(game.Coordinate(i,j))
+        return all_moves
+
+
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
         start_col = start_coord.col
@@ -189,7 +237,7 @@ class Bishop(Piece):
         i += row_dir
         j += col_dir
         while i != end_row and j != end_col:
-            if self.board[i][j].player or i < 0 or j < 0:
+            if self.board[i][j].player or i < 0 or j < 0 or i > 7 or j > 7:
                 return False
             i += row_dir
             j += col_dir
@@ -200,6 +248,25 @@ class Knight(Piece):
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='N', board=board)
         self.player.curr_pieces[self] = 3
+
+    def all_moves(self, start_coord):
+        start_row = start_coord.row
+        start_col = start_coord.col
+        all_moves = []
+        all_moves.append(game.Coordinate(start_row+1, start_col+2))
+        all_moves.append(game.Coordinate(start_row+1, start_col+1))
+        all_moves.append(game.Coordinate(start_row-1, start_col+2))
+        all_moves.append(game.Coordinate(start_row-1, start_col+1))
+        all_moves.append(game.Coordinate(start_row+2, start_col+2))
+        all_moves.append(game.Coordinate(start_row+2, start_col+1))
+        all_moves.append(game.Coordinate(start_row-2, start_col+2))
+        all_moves.append(game.Coordinate(start_row-2, start_col+1))
+        for move in all_moves:
+            if move.row < 0 or move.row > 7 or move.col < 0 or move.col > 7:
+                all_moves.remove(move)
+            elif self.board[move.row][move.col].player == self.player:
+                all_moves.remove(move)
+        return all_moves
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -223,6 +290,26 @@ class Rook(Piece):
         Piece.__init__(self, player=player, name='R', board=board)
         self.moved = False
         self.player.curr_pieces[self] = 5
+    
+    def all_moves(self, start_coord):
+        # does not include possible castling
+        start_row = start_coord.row
+        start_col = start_coord.col
+        all_moves = []
+        directions = [(1,0), (-1,0), (0,-1), (0, 1)]
+        for row_dir, col_dir in directions:
+            i = start_row + row_dir
+            j = start_col + col_dir
+            while not self.board[i][j].player:
+                if self.board[i][j].player or i < 0 or j < 0 or i > 7 or j > 7:
+                    break
+                all_moves.append(game.Coordinate(i,j))
+                i += row_dir
+                j += col_dir
+            if self.board[i][j].player:
+                if self.board[i][j].player != self.player:
+                    all_moves.append(game.Coordinate(i,j))
+        return all_moves
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
@@ -274,6 +361,15 @@ class Queen(Piece):
     def __init__(self, player, board):
         Piece.__init__(self, player=player, name='Q', board=board)
         self.player.curr_pieces[self] = 9
+    
+    def all_moves(self, start_coord):
+        rook = Rook(player=self.player, board=self.board)
+        rook_moves = rook.all_moves(start_coord)
+        bishop = Bishop(player=self.player, board=self.board)
+        bishop_moves = bishop.all_moves(start_coord)
+        del self.player.curr_pieces[rook]
+        del self.player.curr_pieces[bishop]
+        return rook_moves + bishop_moves
 
     def valid_move(self, start_coord, end_coord):
         rook = Rook(player=self.player, board=self.board)
@@ -290,6 +386,21 @@ class King(Piece):
         Piece.__init__(self, player=player, name='K', board=board)
         self.moved = False
         self.player.curr_pieces[self] = 0
+    
+    def all_moves(self, start_coord):
+        start_row = start_coord.row
+        start_col = start_coord.col
+        all_moves = []
+        for row in range(start_row - 1, start_row + 2):
+            for col in range(start_col - 1, start_col + 2):
+                if row < 0 or row > 7 or col < 0 or col > 7:
+                    continue
+                elif row == start_row and col == start_col:
+                    continue
+                elif self.board[row][col].player:
+                    if self.board[row][col].player != self.player:
+                        all_moves.append(game.Coordinate(row, col))
+        return all_moves
 
     def valid_move(self, start_coord, end_coord):
         start_row = start_coord.row
